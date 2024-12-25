@@ -13,7 +13,7 @@ CORS(app)
 host = 'localhost'
 user = 'admin'
 password = 'root'
-database='prolexbase'
+database='your_database_name'
 #database='your_database_name'
 
 
@@ -201,17 +201,37 @@ def gettypes():
     cursor = connection.cursor()
     cursor.execute(query)
     types = cursor.fetchall()
-    return jsonify({'types':types})\
+    return jsonify({'types':types})
     
 # show all existences :
 
 @app.route('/getexistance', methods=['Get'])
 def getexistance():
-    query = f"select FRA_EXISTENCE from existence"
-    cursor = connection.cursor()
-    cursor.execute(query)
-    existences = cursor.fetchall()
-    return jsonify({'existences':existences})
+    try:
+        host = 'localhost'
+        user = 'admin'
+        password = 'root'
+        database='your_database_name'
+        #database='your_database_name'
+
+
+        #connecting to the database 
+        connection = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database,
+            charset="utf8"
+        )
+        query = f"select FRA_EXISTENCE from existence"
+        cursor = connection.cursor()
+        cursor.execute(query)
+        existences = cursor.fetchall()
+        print(existences)
+        return jsonify({'existences':existences})
+    except:
+        print('gg')
+        return jsonify({'existences':'gg'})
 
 
 # show all pivots :
@@ -229,6 +249,9 @@ def getpivots():
 
 
 
+
+
+
 # ------ RECHERCHE PROLEXEME :
 @app.route('/find', methods=['POST'])
 def find_one():
@@ -239,7 +262,10 @@ def find_one():
     cursor.execute(query, (word,))
     results = cursor.fetchall()
     cursor.close()
-    num_prolexeme=results[0][0]
+    try:
+        num_prolexeme=results[0][0]
+    except: 
+        return jsonify({'exist':'le prolexeme n esixiste pas' , 'results':['results']})
     cursor = connection.cursor()
     query = f"SELECT NOTORITY , YEAR FROM notority_{langue}  WHERE NUM_PROLEXEME= %s"
     cursor.execute(query, (num_prolexeme,))
@@ -277,7 +303,7 @@ def find_one():
         if len(accessibility) == 0:
             accessibility=''
 
-    response={'results':results,'notority':notority ,'synonymy':synonym ,'meronymy':meronymy ,'accessibility':accessibility}
+    response={'results':results,'notority':notority ,'synonymy':synonym ,'meronymy':meronymy ,'accessibility':accessibility ,'exist':""}
     return jsonify(response)
 
 # ------ RECHERCHE AVAN :
@@ -322,6 +348,7 @@ def topnotority():
     results = cursor.fetchall()
     cursor.close()
     response={'results':results}
+    print(response)
     return jsonify(response)
 
 
@@ -390,6 +417,7 @@ def upload_file(token):
 def add(token):
     cursor = connection.cursor()
     data=request.json
+    print(data)
     table_name = f"prolexeme_{data['langue']}"
     exister=verify_if_exists(table_name,'LABEL_PROLEXEME',data['prolexeme'])
     if exister :
@@ -398,17 +426,22 @@ def add(token):
     type_id =verify_if_exists('type','FRA_TYPE',data['Type'])
     existance_id = verify_if_exists('existence','FRA_EXISTENCE',data['Existance'])
     cursor = connection.cursor()
-    cursor.execute("Select max(num_prolexeme) from prolexeme_fra")
+    cursor.execute(f"Select max(num_prolexeme) from prolexeme_{data['langue']}")
     new_id= cursor.fetchone()[0] + 1
+
+
+    
     cursor.close()
     if verify_if_exists('pivot', 'num_pivot' ,numero_pivot)== False:
         cursor= connection.cursor()
         cursor.execute("insert into pivot (num_type,NUM_EXISTENCE) values (%s,%s)",(type_id,existance_id))
+
         cursor.close()
         connection.commit()
         cursor = connection.cursor()
         cursor.execute("Select max(num_pivot) from pivot")
-        numero_pivot= cursor.fetchone()[0]
+        numero_pivot= cursor.fetchone()[0]  # a voir\
+        print(numero_pivot)
         cursor.close()
 
     data_to_insert = {
