@@ -461,8 +461,7 @@ def add(token):
 
 # ------ GET PROLEXEME :
 @app.route('/getprolexeme', methods=['POST'])
-@token_required
-def getprolexeme(token):
+def getprolexeme():
     cursor = connection.cursor()
     data=request.json
     table_name = f"prolexeme_{data['langue']}"
@@ -550,8 +549,7 @@ def updateProlexeme(token):
     return jsonify({'msg':'prolexeme deleted'})
 
 @app.route('/getpivot',methods=['POST'])
-@token_required
-def getpivot(token):
+def getpivot():
     data = request.json
     cursor = connection.cursor()
     cursor.execute('''
@@ -661,8 +659,7 @@ def ajouter(token):
 ################################### Alias
 
 @app.route('/getalias',methods=['POST'])
-@token_required
-def getalias(token):
+def getalias():
     cursor = connection.cursor()
     prolexeme=request.json['prolexeme'].lower()
     langue = request.json['langue']
@@ -712,8 +709,7 @@ def deletealias(token):
 
 ################################## derive
 @app.route('/getderive',methods=['POST'])
-@token_required
-def getderive(token):
+def getderive():
     cursor = connection.cursor()
     prolexeme=request.json['prolexeme'].lower()
     langue = request.json['langue']
