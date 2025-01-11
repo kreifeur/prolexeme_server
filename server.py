@@ -267,12 +267,12 @@ def find_one():
     except: 
         return jsonify({'exist':'le prolexeme n esixiste pas' , 'results':['results']})
     cursor = connection.cursor()
-    query = f"SELECT NOTORITY , YEAR FROM notority_{langue}  WHERE NUM_PROLEXEME= %s"
+    query = f"SELECT NUM_FREQUENCY , NUM_YEAR_FREQUENCY FROM Frequency_{langue}  WHERE NUM_PROLEXEME= %s"
     cursor.execute(query, (num_prolexeme,))
     noto = cursor.fetchall()
     notority=[]
     for item in noto:
-        one_notority={'year':item[1], 'noto':item[0]}
+        one_notority={'year':'20'+ str(item[1]), 'noto':item[0]}
         notority.append(one_notority)
     cursor.close()
 
@@ -315,9 +315,16 @@ def find_adv():
     last_letter=request.json['last'].lower()
     middle=request.json['middle'].lower()
     typeprolexeme = request.json['type']
-    query = f"SELECT * FROM prolexeme_{langue} as prolexeme , pivot , type  WHERE lower(prolexeme.LABEL_PROLEXEME) LIKE binary '{first_letter}%{middle}%{last_letter}' and prolexeme.NUM_PIVOT = pivot.NUM_PIVOT and pivot.NUM_TYPE = type.NUM_TYPE and type.FRA_TYPE = %s"
-    cursor.execute(query,(typeprolexeme,))
-    results = cursor.fetchall()
+    print(typeprolexeme)
+    if typeprolexeme == 'Nom propre':
+        print('------------------------')
+        query = f"SELECT * FROM prolexeme_{langue} as prolexeme WHERE lower(prolexeme.LABEL_PROLEXEME) LIKE binary '{first_letter}%{middle}%{last_letter}'"
+        cursor.execute(query)
+        results = cursor.fetchall()
+    else:
+        query = f"SELECT * FROM prolexeme_{langue} as prolexeme , pivot , type  WHERE lower(prolexeme.LABEL_PROLEXEME) LIKE binary '{first_letter}%{middle}%{last_letter}' and prolexeme.NUM_PIVOT = pivot.NUM_PIVOT and pivot.NUM_TYPE = type.NUM_TYPE and type.FRA_TYPE = %s"
+        cursor.execute(query,(typeprolexeme,))
+        results = cursor.fetchall()
     cursor.close()
 
     
@@ -333,18 +340,33 @@ def topnotority():
     limit = request.json['limit']
     type_val = request.json['type'] 
     frequency = request.json['frequency']
-    query = f"""
-        SELECT p.LABEL_PROLEXEME , n.NOTORITY 
-        FROM Notority_{langue} AS n, prolexeme_{langue} AS p, pivot, type 
-        WHERE n.year = %s 
-            AND n.NUM_PROLEXEME = p.NUM_PROLEXEME 
-            AND p.NUM_PIVOT = pivot.NUM_PIVOT 
-            AND pivot.NUM_TYPE = type.NUM_TYPE 
-            AND type.FRA_TYPE = %s  and n.NOTORITY= %s
-        ORDER BY n.NOTORITY 
-        LIMIT %s
-    """
-    cursor.execute(query, (year, type_val,frequency, limit))
+    if type_val == 'Nom propre':
+        query = f"""
+            SELECT p.LABEL_PROLEXEME , n.NUM_FREQUENCY 
+            FROM frequency_{langue} AS n, prolexeme_{langue} AS p, pivot, type 
+            WHERE n.NUM_YEAR_FREQUENCY = %s 
+                AND n.NUM_PROLEXEME = p.NUM_PROLEXEME 
+                AND p.NUM_PIVOT = pivot.NUM_PIVOT 
+                AND pivot.NUM_TYPE = type.NUM_TYPE 
+                and n.NUM_FREQUENCY= %s
+            ORDER BY n.NUM_FREQUENCY 
+            LIMIT %s
+        """
+        cursor.execute(query, (str(year)[-2:],frequency, limit))
+    else:
+        query = f"""
+            SELECT p.LABEL_PROLEXEME , n.NUM_FREQUENCY 
+            FROM frequency_{langue} AS n, prolexeme_{langue} AS p, pivot, type 
+            WHERE n.NUM_YEAR_FREQUENCY = %s 
+                AND n.NUM_PROLEXEME = p.NUM_PROLEXEME 
+                AND p.NUM_PIVOT = pivot.NUM_PIVOT 
+                AND pivot.NUM_TYPE = type.NUM_TYPE 
+                AND type.FRA_TYPE = %s  and n.NUM_FREQUENCY= %s
+            ORDER BY n.NUM_FREQUENCY 
+            LIMIT %s
+        """
+        cursor.execute(query, (str(year)[-2:], type_val,frequency, limit))
+        
     results = cursor.fetchall()
     cursor.close()
     response={'results':results}
