@@ -439,11 +439,11 @@ def upload_file(token):
 def add(token):
     cursor = connection.cursor()
     data=request.json
-    print(data)
     table_name = f"prolexeme_{data['langue']}"
     exister=verify_if_exists(table_name,'LABEL_PROLEXEME',data['prolexeme'])
     if exister :
         return jsonify({'message':'this element exists'})
+
     numero_pivot= data['Num_pivot']
     type_id =verify_if_exists('type','FRA_TYPE',data['Type'])
     existance_id = verify_if_exists('existence','FRA_EXISTENCE',data['Existance'])
@@ -478,7 +478,12 @@ def add(token):
     cursor.execute(insert_query, tuple(data_to_insert.values()))
     cursor.close()
     connection.commit()
-    response={'message':'added successfully'}
+    cursor= connection.cursor()
+    cursor.execute(f'select max(num_prolexeme) from {table_name} ')
+    max_num= cursor.fetchone()
+    print(max_num)
+    cursor.close()
+    response={'message':f'{max_num[0]}'}
     return jsonify(response)
 
 # ------ GET PROLEXEME :
